@@ -1,7 +1,0 @@
-[ v3_ext ]
-subjectAltName = @alt_names
-
-[ alt_names ]
-DNS.1 = label-validator
-DNS.2 = label-validator.kube-system
-DNS.3 = label-validator.kube-system.svc
