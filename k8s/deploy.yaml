@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: label-validator
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: label-validator
+  template:
+    metadata:
+      labels:
+        app: label-validator
+    spec:
+      containers:
+        - name: webhook
+          image: khazim/webhook-validator:latest
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+          imagePullPolicy: Always
+      volumes:
+        - name: tls
+          secret:
+            secretName: label-validator-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: label-validator
+  namespace: kube-system
+spec:
+  selector:
+    app: label-validator
+  ports:
+    - port: 443
+      targetPort: 8443
