@@ -1,0 +1,616 @@
+import React, { useState } from 'react';
+import { ChevronRight, ChevronLeft, CheckCircle, XCircle, ArrowRight, RefreshCw, Activity } from 'lucide-react';
+
+const RollingUpdatePresentation = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    {
+      title: "Rolling Update : Concept Fondamental",
+      content: (
+        <div className="space-y-6">
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded">
+            <h3 className="font-bold text-xl mb-3 text-blue-900">Définition</h3>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              Le Rolling Update est une stratégie de déploiement qui <span className="font-bold text-blue-700">remplace progressivement</span> les anciennes instances d'une application par de nouvelles versions, 
+              <span className="font-bold text-blue-700"> sans interruption de service</span>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mt-6">
+            <div className="bg-green-50 p-5 rounded-lg border border-green-200">
+              <h4 className="font-bold text-green-800 mb-3 flex items-center">
+                <CheckCircle className="mr-2" size={20} />
+                Avantages
+              </h4>
+              <ul className="space-y-2 text-gray-700">
+                <li>• Zero downtime</li>
+                <li>• Rollback facile</li>
+                <li>• Consommation ressources modérée</li>
+                <li>• Natif dans Kubernetes</li>
+              </ul>
+            </div>
+
+            <div className="bg-red-50 p-5 rounded-lg border border-red-200">
+              <h4 className="font-bold text-red-800 mb-3 flex items-center">
+                <XCircle className="mr-2" size={20} />
+                Limitations
+              </h4>
+              <ul className="space-y-2 text-gray-700">
+                <li>• Deux versions coexistent temporairement</li>
+                <li>• Plus lent que Recreate</li>
+                <li>• Nécessite readiness probes</li>
+                <li>• Complexe pour apps stateful</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Fonctionnement Interne : Phase par Phase",
+      content: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
+            <h3 className="font-bold text-lg mb-4 text-purple-900">Les 5 Phases d'un Rolling Update</h3>
+            
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded shadow-sm border-l-4 border-purple-500">
+                <div className="flex items-start">
+                  <span className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Création du nouveau ReplicaSet</h4>
+                    <p className="text-gray-600 mt-1">K8s crée un nouveau ReplicaSet avec l'image v2, mais avec 0 replicas initialement</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded shadow-sm border-l-4 border-blue-500">
+                <div className="flex items-start">
+                  <span className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Scale Up progressif (nouveau)</h4>
+                    <p className="text-gray-600 mt-1">Le nouveau ReplicaSet augmente selon maxSurge. Ex: si maxSurge=1, on crée 1 pod v2</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded shadow-sm border-l-4 border-green-500">
+                <div className="flex items-start">
+                  <span className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Attente Readiness Probe</h4>
+                    <p className="text-gray-600 mt-1">K8s attend que le nouveau pod soit "Ready" avant de continuer. C'est CRITIQUE !</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded shadow-sm border-l-4 border-orange-500">
+                <div className="flex items-start">
+                  <span className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Scale Down (ancien)</h4>
+                    <p className="text-gray-600 mt-1">Dès que v2 est ready, K8s termine 1 pod v1 (selon maxUnavailable)</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded shadow-sm border-l-4 border-red-500">
+                <div className="flex items-start">
+                  <span className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
+                  <div>
+                    <h4 className="font-bold text-gray-800">Répétition jusqu'à complétion</h4>
+                    <p className="text-gray-600 mt-1">Les phases 2-4 se répètent jusqu'à ce que tous les pods soient en v2</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Animation Visuelle : Rolling Update en Action",
+      content: <RollingUpdateAnimation />
+    },
+    {
+      title: "Readiness Probes : Le Garant du Zero Downtime",
+      content: (
+        <div className="space-y-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded">
+            <h3 className="font-bold text-xl mb-3 text-yellow-900">Pourquoi c'est CRITIQUE ?</h3>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              Sans readiness probe, Kubernetes pourrait router du trafic vers un pod qui n'est pas encore prêt 
+              (base de données non connectée, cache non chargé, etc.) → <span className="font-bold text-red-600">ERREURS 500</span>
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <h3 className="font-bold text-lg mb-4">Configuration Readiness Probe</h3>
+            <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto text-sm">
+{`readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 8080
+  initialDelaySeconds: 10  # Temps de démarrage de l'app
+  periodSeconds: 5         # Vérification toutes les 5s
+  timeoutSeconds: 3        # Timeout après 3s
+  successThreshold: 1      # 1 succès = Ready
+  failureThreshold: 3      # 3 échecs = Not Ready`}
+            </pre>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-blue-50 p-4 rounded border border-blue-200">
+              <h4 className="font-bold text-blue-800 mb-2">Readiness Probe</h4>
+              <p className="text-sm text-gray-700">Détermine si le pod peut recevoir du trafic</p>
+              <p className="text-xs text-gray-500 mt-2">Action: Retire du Service LoadBalancer</p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded border border-purple-200">
+              <h4 className="font-bold text-purple-800 mb-2">Liveness Probe</h4>
+              <p className="text-sm text-gray-700">Détermine si le pod est vivant/fonctionnel</p>
+              <p className="text-xs text-gray-500 mt-2">Action: Redémarre le pod</p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "maxSurge & maxUnavailable : Contrôler la Vitesse",
+      content: (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg">
+            <h3 className="font-bold text-xl mb-4 text-indigo-900">Les Deux Paramètres Clés</h3>
+            
+            <div className="space-y-4">
+              <div className="bg-white p-5 rounded shadow border-l-4 border-indigo-500">
+                <h4 className="font-bold text-indigo-700 mb-2">maxSurge</h4>
+                <p className="text-gray-700 mb-3">Nombre maximum de pods SUPPLÉMENTAIRES qu'on peut créer temporairement</p>
+                <div className="bg-indigo-50 p-3 rounded">
+                  <code className="text-sm">maxSurge: 25%</code>
+                  <p className="text-sm text-gray-600 mt-2">Avec 4 replicas → max 5 pods (4 + 1) pendant le rolling</p>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded shadow border-l-4 border-purple-500">
+                <h4 className="font-bold text-purple-700 mb-2">maxUnavailable</h4>
+                <p className="text-gray-700 mb-3">Nombre maximum de pods qui peuvent être indisponibles</p>
+                <div className="bg-purple-50 p-3 rounded">
+                  <code className="text-sm">maxUnavailable: 25%</code>
+                  <p className="text-sm text-gray-600 mt-2">Avec 4 replicas → minimum 3 pods ready (4 - 1) pendant le rolling</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="font-bold text-lg mb-4">Stratégies Communes</h3>
+            <div className="space-y-3">
+              <div className="flex items-start p-3 bg-green-50 rounded border border-green-200">
+                <span className="font-mono text-sm bg-green-200 px-2 py-1 rounded mr-3">maxSurge: 1, maxUnavailable: 0</span>
+                <p className="text-sm text-gray-700">Conservative - Garantit toujours 100% des pods disponibles</p>
+              </div>
+              <div className="flex items-start p-3 bg-blue-50 rounded border border-blue-200">
+                <span className="font-mono text-sm bg-blue-200 px-2 py-1 rounded mr-3">maxSurge: 25%, maxUnavailable: 25%</span>
+                <p className="text-sm text-gray-700">Équilibré - Défaut K8s, bon compromis vitesse/ressources</p>
+              </div>
+              <div className="flex items-start p-3 bg-orange-50 rounded border border-orange-200">
+                <span className="font-mono text-sm bg-orange-200 px-2 py-1 rounded mr-3">maxSurge: 100%, maxUnavailable: 0</span>
+                <p className="text-sm text-gray-700">Rapide - Double les ressources, proche du Blue/Green</p>
+              </div>
+              <div className="flex items-start p-3 bg-red-50 rounded border border-red-200">
+                <span className="font-mono text-sm bg-red-200 px-2 py-1 rounded mr-3">maxSurge: 0, maxUnavailable: 100%</span>
+                <p className="text-sm text-gray-700">Recreate - Arrêt total puis redémarrage (AVEC DOWNTIME !)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Rollout History & Rollback",
+      content: (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-lg border border-cyan-200">
+            <h3 className="font-bold text-xl mb-3 text-cyan-900">Comment K8s Gère l'Historique</h3>
+            <p className="text-gray-700 leading-relaxed">
+              Kubernetes conserve les <span className="font-bold">anciens ReplicaSets</span> (par défaut 10). 
+              Chaque déploiement crée un nouveau ReplicaSet mais garde les anciens avec 0 replicas.
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="font-bold text-lg mb-4 flex items-center">
+              <RefreshCw className="mr-2 text-blue-600" />
+              Commandes de Rollout
+            </h3>
+            <div className="space-y-3">
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Voir l'historique des déploiements</div>
+                <code>kubectl rollout history deployment/mon-app</code>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Observer le rolling update en temps réel</div>
+                <code>kubectl rollout status deployment/mon-app</code>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Rollback vers la version précédente</div>
+                <code>kubectl rollout undo deployment/mon-app</code>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Rollback vers une révision spécifique</div>
+                <code>kubectl rollout undo deployment/mon-app --to-revision=3</code>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Mettre en pause un rolling update</div>
+                <code>kubectl rollout pause deployment/mon-app</code>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-3 rounded">
+                <div className="text-gray-500 text-xs mb-1"># Reprendre un rolling update</div>
+                <code>kubectl rollout resume deployment/mon-app</code>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+            <p className="text-sm text-gray-700">
+              <span className="font-bold">💡 Astuce Pro:</span> Le rollback est quasi-instantané car il ne fait que réutiliser l'ancien ReplicaSet déjà existant !
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Configuration YAML Complète",
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="font-bold text-lg mb-4">Deployment avec Rolling Update Optimisé</h3>
+            <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto text-xs leading-relaxed">
+{`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mon-application
+  labels:
+    app: mon-app
+spec:
+  replicas: 4
+  
+  # Stratégie de Rolling Update
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # 1 pod supplémentaire max
+      maxUnavailable: 0    # Toujours 4 pods minimum disponibles
+  
+  # Nombre de révisions à conserver
+  revisionHistoryLimit: 10
+  
+  # Temps max pour considérer le déploiement comme échoué
+  progressDeadlineSeconds: 600
+  
+  selector:
+    matchLabels:
+      app: mon-app
+  
+  template:
+    metadata:
+      labels:
+        app: mon-app
+        version: v2
+    spec:
+      # Temps accordé pour un shutdown gracieux
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+      - name: app
+        image: mon-app:v2
+        ports:
+        - containerPort: 8080
+        
+        # Readiness Probe - CRITIQUE pour Rolling Update
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Liveness Probe - Pour la résilience
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Ressources garanties
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi`}
+            </pre>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Cas d'Usage : Quand Utiliser Rolling Update ?",
+      content: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-green-50 border-l-4 border-green-500 p-5 rounded">
+              <h3 className="font-bold text-green-800 mb-3 flex items-center">
+                <CheckCircle className="mr-2" size={24} />
+                Idéal Pour
+              </h3>
+              <ul className="space-y-2 text-gray-700">
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span><strong>Applications stateless</strong> - Pas d'état local dans les pods</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span><strong>APIs REST/GraphQL</strong> - Chaque requête est indépendante</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span><strong>Microservices</strong> - Architecture découplée</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span><strong>Changements backward-compatible</strong> - Nouvelles fonctionnalités, bug fixes</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span><strong>Production 24/7</strong> - Zero downtime requis</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-red-50 border-l-4 border-red-500 p-5 rounded">
+              <h3 className="font-bold text-red-800 mb-3 flex items-center">
+                <XCircle className="mr-2" size={24} />
+                À Éviter Pour
+              </h3>
+              <ul className="space-y-2 text-gray-700">
+                <li className="flex items-start">
+                  <span className="mr-2">✗</span>
+                  <span><strong>Applications stateful complexes</strong> - Bases de données distribuées avec quorum</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✗</span>
+                  <span><strong>Changements de schéma DB non rétrocompatibles</strong> - Utiliser Blue/Green</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✗</span>
+                  <span><strong>Applications avec protocoles sensibles à la version</strong> - WebSockets avec protocole strict</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✗</span>
+                  <span><strong>Environnements dev/test</strong> - Recreate est plus simple et plus rapide</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">✗</span>
+                  <span><strong>Pas de health checks</strong> - Rolling Update sera chaotique</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 p-5 rounded">
+            <h3 className="font-bold text-blue-800 mb-3">🎯 Règle d'Or</h3>
+            <p className="text-gray-700 text-lg">
+              Si votre application peut avoir deux versions différentes qui tournent simultanément pendant 1-5 minutes 
+              sans causer de problèmes → <span className="font-bold text-blue-700">Rolling Update est parfait</span>
+            </p>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-t-xl shadow-2xl p-8 border-b-4 border-blue-600">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Rolling Update : Déploiement Sans Coupure</h1>
+          <p className="text-gray-600">BBL - Stratégies de Déploiement Kubernetes</p>
+          <div className="mt-4 flex items-center text-sm text-gray-500">
+            <Activity className="mr-2" size={16} />
+            Slide {currentSlide + 1} / {slides.length}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white shadow-2xl p-10 min-h-[500px]">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-gray-200 pb-3">
+            {slides[currentSlide].title}
+          </h2>
+          <div className="mt-6">
+            {slides[currentSlide].content}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="bg-white rounded-b-xl shadow-2xl p-6 flex justify-between items-center">
+          <button
+            onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
+            disabled={currentSlide === 0}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="mr-2" size={20} />
+            Précédent
+          </button>
+
+          <div className="flex space-x-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  index === currentSlide ? 'bg-blue-600 w-8' : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentSlide(Math.min(slides.length - 1, currentSlide + 1))}
+            disabled={currentSlide === slides.length - 1}
+            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            Suivant
+            <ChevronRight className="ml-2" size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Animation Component
+const RollingUpdateAnimation = () => {
+  const [step, setStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const steps = [
+    { title: "État Initial", v1Pods: 4, v2Pods: 0, ready: [true, true, true, true], traffic: true },
+    { title: "Création Pod v2 (maxSurge: 1)", v1Pods: 4, v2Pods: 1, ready: [true, true, true, true, false], traffic: true },
+    { title: "Pod v2 Ready", v1Pods: 4, v2Pods: 1, ready: [true, true, true, true, true], traffic: true },
+    { title: "Terminaison 1 Pod v1", v1Pods: 3, v2Pods: 1, ready: [true, true, true, true], traffic: true },
+    { title: "Création 2ème Pod v2", v1Pods: 3, v2Pods: 2, ready: [true, true, true, false, true], traffic: true },
+    { title: "2ème Pod v2 Ready", v1Pods: 3, v2Pods: 2, ready: [true, true, true, true, true], traffic: true },
+    { title: "Terminaison 2ème Pod v1", v1Pods: 2, v2Pods: 2, ready: [true, true, true, true], traffic: true },
+    { title: "Progression continue...", v1Pods: 1, v2Pods: 3, ready: [true, true, true, true], traffic: true },
+    { title: "Déploiement Terminé", v1Pods: 0, v2Pods: 4, ready: [true, true, true, true], traffic: true }
+  ];
+
+  const playAnimation = () => {
+    setIsPlaying(true);
+    setStep(0);
+    const interval = setInterval(() => {
+      setStep(s => {
+        if (s >= steps.length - 1) {
+          clearInterval(interval);
+          setIsPlaying(false);
+          return s;
+        }
+        return s + 1;
+      });
+    }, 1500);
+  };
+
+  const currentStep = steps[step];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border border-blue-200">
+        <h3 className="text-xl font-bold text-center mb-4 text-gray-800">{currentStep.title}</h3>
+        
+        <div className="flex justify-center items-center space-x-8 mb-6">
+          {/* Version 1 Pods */}
+          <div className="space-y-2">
+            <div className="text-center font-bold text-blue-700 mb-2">Version 1</div>
+            <div className="flex space-x-2">
+              {Array.from({ length: currentStep.v1Pods }).map((_, i) => (
+                <div key={i} className={`w-16 h-16 rounded-lg flex items-center justify-center font-bold text-white shadow-lg transition-all ${
+                  currentStep.ready[i] ? 'bg-blue-500 scale-100' : 'bg-gray-400 scale-90'
+                }`}>
+                  v1
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <ArrowRight size={32} className="text-gray-400" />
+
+          {/* Version 2 Pods */}
+          <div className="space-y-2">
+            <div className="text-center font-bold text-green-700 mb-2">Version 2</div>
+            <div className="flex space-x-2">
+              {Array.from({ length: currentStep.v2Pods }).map((_, i) => (
+                <div key={i} className={`w-16 h-16 rounded-lg flex items-center justify-center font-bold text-white shadow-lg transition-all ${
+                  currentStep.ready[currentStep.v1Pods + i] ? 'bg-green-500 scale-100' : 'bg-yellow-400 scale-90'
+                }`}>
+                  v2
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Traffic Indicator */}
+        <div className="text-center">
+          <div className={`inline-flex items-center px-6 py-3 rounded-full ${
+            currentStep.traffic ? 'bg-green-100 text-green-800 border-2 border-green-500' : 'bg-red-100 text-red-800 border-2 border-red-500'
+          }`}>
+            <Activity className="mr-2" size={20} />
+            {currentStep.traffic ? 'Trafic actif - Aucune coupure' : 'Service interrompu'}
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex justify-center space-x-4">
+        <button
+          onClick={() => setStep(Math.max(0, step - 1))}
+          disabled={step === 0}
+          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          ← Étape Précédente
+        </button>
+        
+        <button
+          onClick={playAnimation}
+          disabled={isPlaying}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center"
+        >
+          <RefreshCw className={`mr-2 ${isPlaying ? 'animate-spin' : ''}`} size={20} />
+          {isPlaying ? 'Animation en cours...' : 'Lancer Animation'}
+        </button>
+        
+        <button
+          onClick={() => setStep(Math.min(steps.length - 1, step + 1))}
+          disabled={step === steps.length - 1}
+          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          Étape Suivante →
+        </button>
+      </div>
+
+      {/* Progress */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>Progression</span>
+          <span>{step + 1} / {steps.length}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Explanation */}
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+        <p className="text-sm text-gray-700">
+          <span className="font-bold">💡 Observation clé :</span> À chaque étape, le service reste disponible (trafic actif). 
+          Les nouveaux pods ne reçoivent du trafic qu'après être "Ready" (readiness probe réussie).
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default RollingUpdatePresentation;
