@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-bbl-lication
+  labels:
+    app: demo-bbl
+spec:
+  replicas: 4
+  
+  # Stratégie de Rolling Update
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # 1 pod supplémentaire max
+      maxUnavailable: 0    # Toujours 4 pods minimum disponibles
+  
+  # Nombre de révisions à conserver
+  revisionHistoryLimit: 10
+  
+  # Temps max pour considérer le déploiement comme échoué
+  progressDeadlineSeconds: 600
+  
+  selector:
+    matchLabels:
+      app: demo-bbl
+  
+  template:
+    metadata:
+      labels:
+        app: demo-bbl
+        version: v2
+    spec:
+      # Temps accordé pour un shutdown gracieux
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+      - name: app
+        image: demo-bbl:v2
+        ports:
+        - containerPort: 8080
+        
+        # Readiness Probe - CRITIQUE pour Rolling Update
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Liveness Probe - Pour la résilience
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Ressources garanties
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
